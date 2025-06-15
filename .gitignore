@@ -1,9 +1,25 @@
-# Virtualenv
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Entorno virtual
 .venv/
 
 # Variables de entorno
 .env
 
-# Caché de Python
+# Python cache
 __pycache__/
 *.py[cod]
+
+# PyInstaller / Spec files
+*.spec
+
+# Carpetas de build
+build/
+dist/
+
+# Backups
+Backup de la app andando/
