@@ -1,0 +1,6 @@
+cd /Users/ramiroappezzato/guardianclima_itba/src
+source ../.venv/bin/activate   # o como actives tu virtualenv
+python main.py   
+
+
+
