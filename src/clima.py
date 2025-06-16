@@ -1,74 +1,51 @@
 import os
 import requests
 from utils import box, success, error
-from errores import (
-    CiudadNoEncontradaError,
-    ConexionClimaError,
-    APIKeyMissingError
-)
+from errores import CiudadNoEncontradaError, ConexionClimaError, APIKeyMissingError
 
-
-# URL base de OpenWeatherMap
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 def consultar_clima(usuario: str):
     """
-    Pide al usuario una ciudad, consulta la API de OpenWeather,
-    muestra un informe más completo y devuelve (ciudad, temperatura, condición).
+    Consulta la API y devuelve:
+    ciudad, temp (°C), condición, humedad (%), viento (km/h)
     """
     box("CONSULTA DE CLIMA")
     api_key = os.getenv("OPENWEATHER_API_KEY", "").strip()
     if not api_key:
-        error("⎮ ❌ Define OPENWEATHER_API_KEY en tu entorno.")
-        return None
+        raise APIKeyMissingError("Define OPENWEATHER_API_KEY en tu entorno.")
 
     ciudad = input("⎮ 🗺 Ciudad (vacío = Buenos Aires): ").strip() or "Buenos Aires"
-    params = {
-        "q": ciudad,
-        "appid": api_key,
-        "units": "metric",
-        "lang": "es"
-    }
+    params = {"q": ciudad, "appid": api_key, "units": "metric", "lang": "es"}
 
     try:
         resp = requests.get(BASE_URL, params=params, timeout=10)
         resp.raise_for_status()
     except Exception as e:
-        error("Error al llamar al servicio de clima:")
-        print(f"  {e}")
-        return None
+        raise ConexionClimaError(f"Error al conectar con el servicio de clima: {e}")
 
     data = resp.json()
-    # Campos principales
     temperatura = data["main"]["temp"]
-    feels_like  = data["main"].get("feels_like")
-    humedad     = data["main"].get("humidity")
-    presion     = data["main"].get("pressure")
     condicion   = data["weather"][0]["main"]
-    descripcion = data["weather"][0].get("description")
-    viento      = data.get("wind", {})
-    vel_viento  = viento.get("speed")
-    dir_viento  = viento.get("deg")
+    descripcion = data["weather"][0].get("description", "")
+    humedad     = data["main"].get("humidity", 0)
+    viento_ms   = data.get("wind", {}).get("speed", 0.0)
+    viento_kmh  = round(viento_ms * 3.6, 1)
 
-    # Informe por consola
+    # Informe por consola (mismo formato que el original)
     print("─" * 40)
     print("⎮")
     print(f"⎮ 🗺 Ciudad:           {ciudad}")
     print("⎮")
     print(f"⎮ 🌡 Temperatura (°C):  {temperatura}")
     print("⎮")
-    print(f"⎮ 🤗 Sensación (°C):    {feels_like}")
-    print("⎮")
     print(f"⎮ 💧 Humedad (%):       {humedad}")
     print("⎮")
-    print(f"⎮ 🔽 Presión (hPa):     {presion}")
+    print(f"⎮ 🌬 Viento (km/h):     {viento_kmh}")
     print("⎮")
-    print(f"⎮ 🌬 Viento (m/s):      {vel_viento} ({dir_viento}°)")
-    print("⎮")
-    print(f"⎮ 🌥 Condición:         {condicion} – {descripcion}")
+    print(f"⎮ ☁️  Condición:         {condicion} – {descripcion}")
     print("⎮")
     print("─" * 40)
     print()
 
-    # Devuelve solo los 3 campos originales para compatibilidad
-    return ciudad, temperatura, condicion
+    return ciudad, temperatura, condicion, humedad, viento_kmh

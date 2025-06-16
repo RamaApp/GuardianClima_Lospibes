@@ -32,8 +32,8 @@ def validate_password(password: str) -> List[str]:
         errors.append("Debe incluir al menos un carácter especial")
     return errors
 
-def register_user():
-    """Flujo de registro: pide usuario/clave, valida y escribe en el CSV."""
+def register_user() -> str:
+    """Pide usuario/clave, valida, sugiere mejoras y auto-loguea."""
     print()
     box("REGISTRO DE USUARIO")
     print()
@@ -42,7 +42,8 @@ def register_user():
     username = input("⎯⎯⇥ Nombre de usuario: ").strip()
     if username in users:
         error("⎯⎯ Ese usuario ya existe ⎯⎯.")
-        return
+        print()
+        return ""
 
     password = input("⌲ Contraseña: ").strip()
     errs = validate_password(password)
@@ -50,14 +51,33 @@ def register_user():
         error("Contraseña inválida por las siguientes razones:")
         for e in errs:
             print(f"   • {e}")
-        return
+        # Sugerencias
+        recomendaciones = []
+        if "Debe tener al menos 8 caracteres" in errs:
+            recomendaciones.append("usar ≥8 caracteres")
+        if "Debe incluir al menos una letra mayúscula" in errs:
+            recomendaciones.append("incluir letras MAYÚSCULAS")
+        if "Debe incluir al menos un dígito" in errs:
+            recomendaciones.append("añadir números (0-9)")
+        if "Debe incluir al menos un carácter especial" in errs:
+            recomendaciones.append("añadir símbolos (!@#…)")
+        if recomendaciones:
+            print()
+            print("Para una contraseña más segura, considera:",
+                  "; ".join(recomendaciones) + ".")
+        print()
+        return ""
 
     with open(USERS_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow([username, password])
+
     print()
-    success("Usuario registrado con éxito.")
+    success(f"Usuario '{username}' registrado con éxito.")
     print()
+    print("Te conecto automáticamente…")
+    print()
+    return username
 
 def login_user() -> str:
     """Flujo de login con hasta 3 intentos; si falla, vuelve al menú principal."""
@@ -73,7 +93,7 @@ def login_user() -> str:
 
         if users.get(username) == password:
             print()
-            box("SESION INICIADA CON ÉXITO")
+            box("SESIÓN INICIADA CON ÉXITO")
             print()
             success(f"¡Bienvenido, {username}!")
             print()
@@ -85,22 +105,3 @@ def login_user() -> str:
     error("Demasiados intentos fallidos. Regresando al menú principal.")
     print()
     return ""
-
-if __name__ == "__main__":
-    # Modo prueba 
-    while True:
-        print()
-        box("MODO PRUEBA AUTH")
-        print()
-        cmd = input("Escribe register / login / exit: ").lower().strip()
-        print()
-        if cmd == "register":
-            register_user()
-        elif cmd == "login":
-            login_user()
-        elif cmd == "exit":
-            success("Saliendo del modo prueba.")
-            break
-        else:
-            error("Comando inválido. Usa 'register', 'login' o 'exit'.")
-            print()

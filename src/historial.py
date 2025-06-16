@@ -1,51 +1,43 @@
-# src/historial.py
-
 import os
 import csv
 from utils import box, error
 
-HISTORIAL_CSV = os.path.join(
-    os.path.dirname(__file__),
-    os.pardir,
-    "data",
-    "historial_global.csv"
-)
+HISTORIAL_CSV = os.path.join(os.path.dirname(__file__), os.pardir, "data", "historial_global.csv")
 
 def ver_historial(usuario_actual: str):
     """
-    Muestra tu historial personal de consultas (o de todos si usuario_actual==""), 
-    leyendo data/historial_global.csv.
+    Muestra tu historial personal solicitando ciudad y filtrando.
+    Soporta filas antiguas con sólo 5 columnas rellenando humedad y viento como cadenas vacías.
     """
     if not os.path.exists(HISTORIAL_CSV):
-        error("No hay historial personal para mostrar.")
+        error("No hay historial global para mostrar.")
         print()
         return
 
-    # Lee todo y luego selecciona filas que empiecen el usuario (o todas)
+    ciudad_filtro = input("Ciudad para filtrar (vacío = todas): ").strip().lower()
+
     with open(HISTORIAL_CSV, newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
-        rows = [r for r in reader if r and (usuario_actual == "" or r[0] == usuario_actual)]
+        rows = []
+        for r in reader:
+            if not r or r[0] != usuario_actual:
+                continue
+            if ciudad_filtro and (len(r) < 2 or r[1].lower() != ciudad_filtro):
+                continue
+            # Si la fila tiene menos de 7 campos, la rellenamos
+            if len(r) < 7:
+                r = r + [""] * (7 - len(r))
+            rows.append(r)
 
     if not rows:
-        error("No encontré entradas para ese usuario.")
+        error("No encontré entradas para ese usuario/ciudad.")
         print()
         return
 
-    # Imprime cada fila adaptando al número de columnas
+    print()
     box("HISTORIAL PERSONAL")
     for row in rows:
-        # asegura al menos 5 columnas
-        usr = row[0]
-        ciu = row[1] if len(row) > 1 else ""
-        ts  = row[2] if len(row) > 2 else ""
-        temp= row[3] if len(row) > 3 else ""
-        cond= row[4] if len(row) > 4 else ""
-
-        # campos opcionales (humedad, descripción, viento) ya no se usan o pueden imprimirse si existen
-        hum = row[5] if len(row) > 5 else ""
-        desc= row[6] if len(row) > 6 else ""
-        viento = row[7] if len(row) > 7 else ""
-
+        usr, ciu, ts, temp, cond, hum, viento = row
         print()
         print(f"👤 Usuario : {usr}")
         print()
@@ -53,15 +45,14 @@ def ver_historial(usuario_actual: str):
         print()
         print(f"⏱️ Fecha   : {ts}")
         print()
-        print(f"🌡 Temperatura: {temp}°C")
+        print(f"🌡 Temp    : {temp}°C")
         print()
-        print(f"☁️  Clima    : {cond}")
+        print(f"☁️  Clima  : {cond}")
         print()
-        if hum:
-            print(f"💧 Humedad : {hum}%")
-        if desc:
-            print(f"📝 Desc    : {desc}")
-        if viento:
-            print(f"💨 Viento  : {viento}")
+        # Si humedad o viento estaban vacíos, simplemente se muestran en blanco
+        print(f"💧 Humedad : {hum}" + ("" if hum == "" else "%"))
+        print()
+        print(f"🌬 Viento  : {viento}" + ("" if viento == "" else " km/h"))
+        print()
         print("-" * 30)
     print()
